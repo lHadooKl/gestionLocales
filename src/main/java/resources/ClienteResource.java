@@ -12,44 +12,11 @@ import java.util.List;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class ClienteResource {
+    @Inject private ClienteService service;
 
-    @Inject
-    private ClienteService clienteService;
-
-    @GET
-    public Response listar() {
-        List<Cliente> lista = clienteService.findAll();
-        return Response.ok(lista).build();
-    }
-
-    @GET
-    @Path("/{id}")
-    public Response obtener(@PathParam("id") Long id) {
-        Cliente c = clienteService.find(id);
-        if (c == null) return Response.status(Response.Status.NOT_FOUND).build();
-        return Response.ok(c).build();
-    }
-
-    @POST
-    public Response crear(Cliente c) {
-        Cliente creado = clienteService.save(c);
-        return Response.status(Response.Status.CREATED).entity(creado).build();
-    }
-
-    @PUT
-    @Path("/{id}")
-    public Response actualizar(@PathParam("id") Long id, Cliente c) {
-        Cliente exist = clienteService.find(id);
-        if (exist == null) return Response.status(Response.Status.NOT_FOUND).build();
-        c.setId_cliente(id);
-        Cliente actualizado = clienteService.save(c);
-        return Response.ok(actualizado).build();
-    }
-
-    @DELETE
-    @Path("/{id}")
-    public Response eliminar(@PathParam("id") Long id) {
-        clienteService.delete(id);
-        return Response.noContent().build();
-    }
+    @GET public List<Cliente> list() { return service.findAll(); }
+    @GET @Path("/{id}") public Cliente get(@PathParam("id") Long id) { return service.find(id); }
+    @POST public Response create(Cliente c) { service.create(c); return Response.status(Response.Status.CREATED).entity(c).build(); }
+    @PUT @Path("/{id}") public Cliente update(@PathParam("id") Long id, Cliente c) { c.setId_cliente(id); return service.update(c); }
+    @DELETE @Path("/{id}") public Response delete(@PathParam("id") Long id) { service.delete(id); return Response.noContent().build(); }
 }

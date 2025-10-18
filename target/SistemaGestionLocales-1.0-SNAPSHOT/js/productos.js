@@ -1,66 +1,63 @@
-const API_URL = "http://localhost:8080/SistemaGestionLocales/api/productos";
+// productos.js
 
-document.addEventListener("DOMContentLoaded", () => {
-  cargarProductos();
-
-  document.getElementById("productoForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const nuevoProducto = {
-      nombre: document.getElementById("nombre").value,
-      descripcion: document.getElementById("descripcion").value,
-      precio: parseFloat(document.getElementById("precio").value),
-      stock: parseInt(document.getElementById("stock").value),
-      proveedor: { id_proveedor: parseInt(document.getElementById("idProveedor").value) }
-    };
-
-    const resp = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(nuevoProducto)
-    });
-
-    if (resp.ok) {
-      alert("Producto registrado correctamente");
-      e.target.reset();
-      cargarProductos();
-    } else {
-      alert("Error al registrar producto");
-    }
-  });
-});
+document.addEventListener("DOMContentLoaded", cargarProductos);
+document.getElementById("productoForm").addEventListener("submit", guardarProducto);
 
 async function cargarProductos() {
-  const resp = await fetch(API_URL);
-  const productos = await resp.json();
+    try {
+        const productos = await apiRequest("/productos");
+        const tabla = document.getElementById("tablaProductos");
+        tabla.innerHTML = "";
 
-  const tbody = document.querySelector("#tablaProductos tbody");
-  tbody.innerHTML = "";
-
-  productos.forEach(p => {
-    const fila = `
-      <tr>
-        <td>${p.idProducto}</td>
-        <td>${p.nombre}</td>
-        <td>${p.descripcion}</td>
-        <td>${p.precio}</td>
-        <td>${p.stock}</td>
-        <td>${p.proveedor?.nombre ?? "-"}</td>
-        <td><button onclick="eliminarProducto(${p.idProducto})">Eliminar</button></td>
-      </tr>
-    `;
-    tbody.innerHTML += fila;
-  });
+        productos.forEach(p => {
+            tabla.innerHTML += `
+                <tr>
+                    <td>${p.id_producto}</td>
+                    <td>${p.nombre}</td>
+                    <td>${p.descripcion}</td>
+                    <td>${p.precio}</td>
+                    <td>${p.stock}</td>
+                    <td>${p.proveedor ? p.proveedor.id_proveedor : '-'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" onclick="eliminar(${p.id_producto})">Eliminar</button>
+                    </td>
+                </tr>`;
+        });
+    } catch (error) {
+        console.error("Error al cargar productos:", error);
+        alert("No se pudieron cargar los productos.");
+    }
 }
 
-async function eliminarProducto(id) {
-  if (confirm("¿Eliminar producto?")) {
-    const resp = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
-    if (resp.ok) {
-      alert("Producto eliminado");
-      cargarProductos();
-    } else {
-      alert("Error al eliminar producto");
+async function guardarProducto(e) {
+    e.preventDefault();
+
+    const producto = {
+        nombre: nombre.value,
+        descripcion: descripcion.value,
+        precio: parseFloat(precio.value),
+        stock: parseInt(stock.value),
+        proveedor: { id_proveedor: parseInt(id_proveedor.value) }
+    };
+
+    try {
+        await apiRequest("/productos", "POST", producto);
+        e.target.reset();
+        cargarProductos();
+    } catch (error) {
+        console.error("Error al guardar producto:", error);
+        alert("No se pudo guardar el producto.");
     }
-  }
+}
+
+async function eliminar(id) {
+    if (!confirm("¿Seguro que deseas eliminar este producto?")) return;
+
+    try {
+        await apiRequest(`/productos/${id}`, "DELETE");
+        cargarProductos();
+    } catch (error) {
+        console.error("Error al eliminar producto:", error);
+        alert("No se pudo eliminar el producto.");
+    }
 }

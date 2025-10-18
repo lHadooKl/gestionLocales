@@ -1,30 +1,21 @@
 package services;
 
 import jakarta.ejb.Stateless;
-import jakarta.inject.Inject;
-import repositories.ProveedorRepository;
 import entities.Proveedor;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.util.List;
 
 @Stateless
 public class ProveedorService {
+    @PersistenceContext(unitName = "jpaGestionLocales")
+    private EntityManager em;
 
-    @Inject
-    private ProveedorRepository proveedorRepo;
-
-    public Proveedor find(Long id) {
-        return proveedorRepo.find(id);
-    }
-
-    public List<Proveedor> findAll() {
-        return proveedorRepo.findAll();
-    }
-
-    public Proveedor save(Proveedor p) {
-        return proveedorRepo.save(p);
-    }
-
+    public Proveedor create(Proveedor p) { em.persist(p); return p; }
+    public Proveedor update(Proveedor p) { return em.merge(p); }
     public void delete(Long id) {
-        proveedorRepo.delete(id);
+        Proveedor p = em.find(Proveedor.class, id); if (p != null) em.remove(p);
     }
+    public Proveedor find(Long id) { return em.find(Proveedor.class, id); }
+    public List<Proveedor> findAll() { return em.createQuery("SELECT p FROM Proveedor p", Proveedor.class).getResultList(); }
 }

@@ -1,65 +1,62 @@
-const API_URL_DETALLES = "http://localhost:8080/SistemaGestionLocales/api/detalles_pedido";
+// detalles-pedido.js
 
-document.addEventListener("DOMContentLoaded", () => {
-  cargarDetalles();
-
-  document.getElementById("detalleForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const nuevoDetalle = {
-      idPedido: parseInt(document.getElementById("idPedido").value),
-      idProducto: parseInt(document.getElementById("idProducto").value),
-      cantidad: parseInt(document.getElementById("cantidad").value),
-      precioUnitario: parseFloat(document.getElementById("precioUnitario").value)
-    };
-
-    const resp = await fetch(API_URL_DETALLES, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(nuevoDetalle)
-    });
-
-    if (resp.ok) {
-      alert("Detalle agregado correctamente");
-      e.target.reset();
-      cargarDetalles();
-    } else {
-      alert("Error al agregar detalle");
-    }
-  });
-});
+document.addEventListener("DOMContentLoaded", cargarDetalles);
+document.getElementById("detalleForm").addEventListener("submit", guardarDetalle);
 
 async function cargarDetalles() {
-  const resp = await fetch(API_URL_DETALLES);
-  const detalles = await resp.json();
+    try {
+        const detalles = await apiRequest("/detallespedido", "GET"); 
+        const tabla = document.getElementById("tablaDetalles");
+        tabla.innerHTML = "";
 
-  const tbody = document.querySelector("#tablaDetalles tbody");
-  tbody.innerHTML = "";
-
-  detalles.forEach(d => {
-    tbody.innerHTML += `
-      <tr>
-        <td>${d.idDetalle}</td>
-        <td>${d.idPedido}</td>
-        <td>${d.idProducto}</td>
-        <td>${d.cantidad}</td>
-        <td>${d.precioUnitario.toFixed(2)}</td>
-        <td>
-          <button class="btn btn-danger btn-sm" onclick="eliminarDetalle(${d.idDetalle})">Eliminar</button>
-        </td>
-      </tr>
-    `;
-  });
+        detalles.forEach(d => {
+            tabla.innerHTML += `
+                <tr>
+                    <td>${d.id_detalle}</td>
+                    <td>${d.pedido ? d.pedido.id_pedido : '-'}</td>
+                    <td>${d.producto ? d.producto.nombre : '-'}</td>
+                    <td>${d.cantidad}</td>
+                    <td>${d.precio_unitario}</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" onclick="eliminar(${d.id_detalle})">
+                            Eliminar
+                        </button>
+                    </td>
+                </tr>`;
+        });
+    } catch (err) {
+        console.error("Error al cargar detalles:", err);
+        alert("No se pudieron cargar los detalles de pedido.");
+    }
 }
 
-async function eliminarDetalle(id) {
-  if (confirm("¿Eliminar este detalle?")) {
-    const resp = await fetch(`${API_URL_DETALLES}/${id}`, { method: "DELETE" });
-    if (resp.ok) {
-      alert("Detalle eliminado correctamente");
-      cargarDetalles();
-    } else {
-      alert("Error al eliminar detalle");
+async function guardarDetalle(e) {
+    e.preventDefault();
+
+    const detalle = {
+        pedido: { id_pedido: parseInt(document.getElementById("id_pedido").value) },
+        producto: { id_producto: parseInt(document.getElementById("id_producto").value) },
+        cantidad: parseInt(document.getElementById("cantidad").value),
+        precio_unitario: parseFloat(document.getElementById("precio_unitario").value)
+    };
+
+    try {
+        await apiRequest("/detallespedido", "POST", detalle);
+        e.target.reset();
+        cargarDetalles();
+    } catch (err) {
+        console.error("Error al guardar detalle:", err);
+        alert("No se pudo guardar el detalle del pedido.");
     }
-  }
+}
+
+async function eliminar(id) {
+    if (!confirm("¿Deseas eliminar este detalle de pedido?")) return;
+    try {
+        await apiRequest(`/detallespedido/${id}`, "DELETE"); 
+        cargarDetalles();
+    } catch (err) {
+        console.error("Error al eliminar detalle:", err);
+        alert("No se pudo eliminar el detalle del pedido.");
+    }
 }

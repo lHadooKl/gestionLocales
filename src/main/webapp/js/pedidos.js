@@ -1,60 +1,76 @@
-const API_URL_PED = "http://localhost:8080/SistemaGestionLocales/api/pedidos";
-
-document.addEventListener("DOMContentLoaded", () => {
-  cargarPedidos();
-
-  document.getElementById("pedidoForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const nuevo = {
-      idCliente: document.getElementById("idCliente").value,
-      estado: document.getElementById("estado").value
-    };
-
-    const resp = await fetch(API_URL_PED, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(nuevo)
-    });
-
-    if (resp.ok) {
-      alert("Pedido agregado");
-      e.target.reset();
-      cargarPedidos();
-    } else {
-      alert("Error al agregar pedido");
-    }
-  });
-});
+// pedidos.js
+document.addEventListener("DOMContentLoaded", cargarPedidos);
+document.getElementById("pedidoForm").addEventListener("submit", guardarPedido);
 
 async function cargarPedidos() {
-  const resp = await fetch(API_URL_PED);
-  const pedidos = await resp.json();
+    const pedidos = await apiRequest("/pedidos"); 
+    const tabla = document.getElementById("tablaPedidos");
+    tabla.innerHTML = "";
 
-  const tbody = document.querySelector("#tablaPedidos tbody");
-  tbody.innerHTML = "";
+    if (!pedidos || pedidos.length === 0) {
+        tabla.innerHTML = `<tr><td colspan="5" class="text-center">No hay pedidos registrados</td></tr>`;
+        return;
+    }
 
-  pedidos.forEach(p => {
-    tbody.innerHTML += `
-      <tr>
-        <td>${p.idPedido}</td>
-        <td>${p.idCliente}</td>
-        <td>${p.fechaPedido}</td>
-        <td>${p.estado}</td>
-        <td><button onclick="eliminarPedido(${p.idPedido})">Eliminar</button></td>
-      </tr>
-    `;
-  });
+    pedidos.forEach(p => {
+        tabla.innerHTML += `
+        <tr>
+            <td>${p.id_pedido}</td>
+            <td>${p.cliente ? p.cliente.nombre : '-'}</td>
+            <td>${p.fecha_pedido ? p.fecha_pedido.replace('T', ' ').substring(0, 19) : '-'}</td>
+            <td>${p.estado}</td>
+            <td>
+                <button class="btn btn-sm btn-danger" onclick="eliminar(${p.id_pedido})">
+                    Eliminar
+                </button>
+            </td>
+        </tr>`;
+    });
 }
 
-async function eliminarPedido(id) {
-  if (confirm("¿Eliminar pedido?")) {
-    const resp = await fetch(`${API_URL_PED}/${id}`, { method: "DELETE" });
-    if (resp.ok) {
-      alert("Pedido eliminado");
-      cargarPedidos();
-    } else {
-      alert("Error al eliminar pedido");
+async function guardarPedido(e) {
+    e.preventDefault();
+
+    const pedido = {
+        cliente: { id_cliente: parseInt(document.getElementById("id_cliente").value) },
+        estado: document.getElementById("estado").value
+    };
+
+    try {
+        await apiRequest("/pedidos", "POST", pedido); 
+        alert("Pedido creado correctamente");
+        e.target.reset();
+        cargarPedidos();
+    } catch (err) {
+        alert("Error al crear el pedido: " + err.message);
     }
-  }
+}
+
+async function eliminar(id) {
+    if (!confirm("¿Deseas eliminar este pedido?")) return;
+
+    try {
+        await apiRequest(`/pedidos/${id}`, "DELETE"); 
+        alert("Pedido eliminado correctamente");
+        cargarPedidos();
+    } catch (err) {
+        alert("Error al eliminar el pedido: " + err.message);
+    }
+}
+
+// 🔧 Función genérica para llamadas a la API
+async function apiRequest(endpoint, method = "GET", body = null) {
+    const baseUrl = "http://localhost:8080/gestion-inventarios/api"; 
+    const options = {
+        method,
+        headers: { "Content-Type": "application/json" }
+    };
+    if (body) options.body = JSON.stringify(body);
+
+    const res = await fetch(baseUrl + endpoint, options);
+    if (!res.ok) {
+        const msg = await res.text();
+        throw new Error(msg || "Error en la solicitud");
+    }
+    return res.status !== 204 ? await res.json() : null;
 }

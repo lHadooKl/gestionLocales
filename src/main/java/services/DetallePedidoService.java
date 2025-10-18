@@ -1,30 +1,37 @@
 package services;
 
 import entities.DetallePedido;
+import entities.Pedido;
+import entities.Producto;
 import jakarta.ejb.Stateless;
-import jakarta.inject.Inject;
-import repositories.DetallePedidoRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.util.List;
 
 @Stateless
 public class DetallePedidoService {
 
-    @Inject
-    private DetallePedidoRepository repository;
+    @PersistenceContext(unitName = "jpaGestionLocales")
+    private EntityManager em;
 
-    public List<DetallePedido> listarTodos() {
-        return repository.findAll();
+    public DetallePedido create(DetallePedido d) {
+        if (d.getPedido() != null && d.getPedido().getId_pedido() != null) {
+            d.setPedido(em.find(Pedido.class, d.getPedido().getId_pedido()));
+        }
+        if (d.getProducto() != null && d.getProducto().getId_producto() != null) {
+            d.setProducto(em.find(Producto.class, d.getProducto().getId_producto()));
+        }
+
+        em.persist(d);
+        return d;
     }
 
-    public DetallePedido obtenerPorId(Long id) {
-        return repository.find(id);
+    public List<DetallePedido> findAll() {
+        return em.createQuery("SELECT d FROM DetallePedido d", DetallePedido.class).getResultList();
     }
 
-    public DetallePedido guardar(DetallePedido detalle) {
-        return repository.save(detalle);
-    }
-
-    public void eliminar(Long id) {
-        repository.delete(id);
+    public void delete(int id) {
+        DetallePedido d = em.find(DetallePedido.class, id);
+        if (d != null) em.remove(d);
     }
 }

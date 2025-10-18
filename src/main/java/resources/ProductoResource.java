@@ -17,38 +17,28 @@ public class ProductoResource {
     private ProductoService productoService;
 
     @GET
-    public Response listar() {
-        List<Producto> lista = productoService.findAll();
-        return Response.ok(lista).build();
-    }
+    public List<Producto> list() { return productoService.findAll(); }
 
     @GET
     @Path("/{id}")
-    public Response obtener(@PathParam("id") Long id) {
-        Producto p = productoService.find(id);
-        if (p == null) return Response.status(Response.Status.NOT_FOUND).build();
-        return Response.ok(p).build();
-    }
+    public Producto get(@PathParam("id") Long id) { return productoService.find(id); }
 
     @POST
-    public Response crear(Producto p) {
-        Producto creado = productoService.createOrUpdate(p);
-        return Response.status(Response.Status.CREATED).entity(creado).build();
+    public Response create(Producto p) {
+        productoService.create(p);
+        return Response.status(Response.Status.CREATED).entity(p).build();
     }
 
     @PUT
     @Path("/{id}")
-    public Response actualizar(@PathParam("id") Long id, Producto p) {
-        Producto exist = productoService.find(id);
-        if (exist == null) return Response.status(Response.Status.NOT_FOUND).build();
+    public Producto update(@PathParam("id") Long id, Producto p) {
         p.setId_producto(id);
-        Producto actualizado = productoService.createOrUpdate(p);
-        return Response.ok(actualizado).build();
+        return productoService.update(p);
     }
 
     @DELETE
     @Path("/{id}")
-    public Response eliminar(@PathParam("id") Long id) {
+    public Response delete(@PathParam("id") Long id) {
         productoService.delete(id);
         return Response.noContent().build();
     }
